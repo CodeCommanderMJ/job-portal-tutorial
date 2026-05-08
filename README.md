@@ -4,12 +4,6 @@ A modern, full-stack job portal where **recruiters can post jobs** and **candida
 
 ---
 
-## 🚀 Live Demo
-
-🔗 [hirrd.vercel.app](https://hirrd.vercel.app)
-
----
-
 ## ✨ Features
 
 - 🔐 **Authentication** — Secure sign-up/login with Clerk (supports Google OAuth)
