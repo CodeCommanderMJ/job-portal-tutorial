@@ -27,7 +27,7 @@ const schema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   description: z.string().min(1, { message: "Description is required" }),
   location: z.string().min(1, { message: "Select a location" }),
-  company_id: z.string().min(1, { message: "Select or Add a new Company" }),
+  company_id: z.string().min(1, { message: "Select or Add a Company" }),
   requirements: z.string().min(1, { message: "Requirements are required" }),
 });
 
@@ -41,7 +41,13 @@ const PostJob = () => {
     control,
     formState: { errors },
   } = useForm({
-    defaultValues: { location: "", company_id: "", requirements: "" },
+    defaultValues: {
+      title: "",
+      description: "",
+      location: "",
+      company_id: "",
+      requirements: "",
+    },
     resolver: zodResolver(schema),
   });
 
@@ -52,31 +58,34 @@ const PostJob = () => {
     fn: fnCreateJob,
   } = useFetch(addNewJob);
 
-  const onSubmit = (data) => {
-    fnCreateJob({
-      ...data,
-      recruiter_id: user.id,
-      company_id: Number(data.company_id), // ✅ convert back to number for Supabase
-      isOpen: true,
-    });
-  };
-
-  useEffect(() => {
-    if (dataCreateJob?.length > 0) navigate("/jobs");
-  }, [dataCreateJob, navigate]);
-
   const {
     loading: loadingCompanies,
     data: companies,
     fn: fnCompanies,
   } = useFetch(getCompanies);
 
+  // Load companies when user is ready
   useEffect(() => {
     if (isLoaded) fnCompanies();
   }, [isLoaded]);
 
+  // Redirect after successful job post
+  useEffect(() => {
+    if (dataCreateJob) {
+      navigate("/jobs");
+    }
+  }, [dataCreateJob]);
+
+  const onSubmit = (data) => {
+    fnCreateJob({
+      ...data,
+      recruiter_id: user.id,
+      isOpen: true,
+    });
+  };
+
   if (!isLoaded || loadingCompanies) {
-    return <BarLoader className="mb-4" width={"100%"} color="#36d7b7" />;
+    return <BarLoader width="100%" color="#36d7b7" />;
   }
 
   if (user?.unsafeMetadata?.role !== "recruiter") {
@@ -91,17 +100,21 @@ const PostJob = () => {
 
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="flex flex-col gap-4 p-4 pb-0"
+        className="flex flex-col gap-4 p-4"
       >
+        {/* Title */}
         <Input placeholder="Job Title" {...register("title")} />
         {errors.title && <p className="text-red-500">{errors.title.message}</p>}
 
+        {/* Description */}
         <Textarea placeholder="Job Description" {...register("description")} />
         {errors.description && (
           <p className="text-red-500">{errors.description.message}</p>
         )}
 
-        <div className="flex gap-4 items-center">
+        {/* Location + Company */}
+        <div className="flex gap-4">
+          {/* Location */}
           <Controller
             name="location"
             control={control}
@@ -123,24 +136,19 @@ const PostJob = () => {
             )}
           />
 
+          {/* Company */}
           <Controller
             name="company_id"
             control={control}
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Company">
-                    {field.value
-                      ? companies?.find(
-                          (com) => com.id === Number(field.value)
-                        )?.name
-                      : "Company"}
-                  </SelectValue>
+                  <SelectValue placeholder="Company" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {companies?.map(({ name, id }) => (
-                      <SelectItem key={id} value={String(id)}>
+                    {companies?.map(({ id, name }) => (
+                      <SelectItem key={id} value={id.toString()}>
                         {name}
                       </SelectItem>
                     ))}
@@ -153,13 +161,10 @@ const PostJob = () => {
           <AddCompanyDrawer fetchCompanies={fnCompanies} />
         </div>
 
-        {errors.location && (
-          <p className="text-red-500">{errors.location.message}</p>
-        )}
-        {errors.company_id && (
-          <p className="text-red-500">{errors.company_id.message}</p>
-        )}
+        {errors.location && <p className="text-red-500">{errors.location.message}</p>}
+        {errors.company_id && <p className="text-red-500">{errors.company_id.message}</p>}
 
+        {/* Requirements */}
         <Controller
           name="requirements"
           control={control}
@@ -167,18 +172,17 @@ const PostJob = () => {
             <MDEditor value={field.value} onChange={field.onChange} />
           )}
         />
-
         {errors.requirements && (
           <p className="text-red-500">{errors.requirements.message}</p>
         )}
 
-        {errorCreateJob?.message && (
+        {errorCreateJob && (
           <p className="text-red-500">{errorCreateJob.message}</p>
         )}
 
-        {loadingCreateJob && <BarLoader width={"100%"} color="#36d7b7" />}
+        {loadingCreateJob && <BarLoader width="100%" color="#36d7b7" />}
 
-        <Button type="submit" variant="blue" size="lg" className="mt-2">
+        <Button type="submit" variant="blue" size="lg">
           Submit
         </Button>
       </form>

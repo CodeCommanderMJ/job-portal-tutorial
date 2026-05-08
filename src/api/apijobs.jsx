@@ -8,7 +8,8 @@ export async function getJobs(token, { location, company_id, searchQuery }) {
 
   let query = supabase
     .from("jobs")
-    .select("*, saved:saved_jobs(id), company:companies(name,logo_url)");
+    .select("*, saved:saved_jobs(id), company:companies(name,logo_url)")
+    .eq("isOpen", true);
 
   if (location && location.trim() !== "") {
     query = query.eq("location", location);

@@ -1,8 +1,4 @@
-import supabaseClient, { supabaseUrl } from "../utils/supabase.js";
-
-
-
-
+import supabaseClient, { supabaseUrl } from "@/utils/supabase.js";
 // Fetch Companies
 export async function getCompanies(token) {
   const supabase = await supabaseClient(token);

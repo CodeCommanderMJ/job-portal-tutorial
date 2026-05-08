@@ -5,65 +5,41 @@ import { useEffect } from "react";
 import { BarLoader } from "react-spinners";
 
 const Onboarding = () => {
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded } = useUser();
   const navigate = useNavigate();
 
-  // Decide where to send user
-  const navigateUser = (role) => {
-    if (role === "recruiter") {
-      navigate("/post-job");
-    } else {
-      navigate("/jobs");
-    }
+  const navigateUser = (currRole) => {
+    navigate(currRole === "recruiter" ? "/post-job" : "/job");
   };
 
-  // Save role to Clerk
   const handleRoleSelection = async (role) => {
-    if (!user) return;
-
-    try {
-      await user.update({
-        publicMetadata: {
-          role: role,
-        },
+    await user
+      .update({ unsafeMetadata: { role } })
+      .then(() => {
+        console.log(`Role updated to: ${role}`);
+        navigateUser(role);
+      })
+      .catch((err) => {
+        console.error("Error updating role:", err);
       });
-
-      console.log("Role saved:", role);
-      navigateUser(role);
-    } catch (error) {
-      console.error("Failed to save role:", error);
-    }
   };
 
-  // Auto redirect if role already exists
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
-
-    const role = user?.publicMetadata?.role;
-    if (role) {
-      navigateUser(role);
+    if (user?.unsafeMetadata?.role) {
+      navigateUser(user.unsafeMetadata.role);
     }
-  }, [isLoaded, isSignedIn, user]);
+  }, [user]);
 
-  // Loading state
   if (!isLoaded) {
-    return (
-      <div className="w-full mt-40 px-10">
-        <BarLoader width="100%" color="#36d7b7" />
-      </div>
-    );
+    return <BarLoader className="mb-4" width={"100%"} color="#36d7b7" />;
   }
 
   return (
-    <div className="flex flex-col items-center justify-center mt-40 relative">
-      
-      {/* Title */}
-      <h2 className="relative z-10 gradient-title font-extrabold text-7xl sm:text-8xl tracking-tighter">
+    <div className="flex flex-col items-center justify-center mt-40">
+      <h2 className="gradient-title font-extrabold text-7xl sm:text-8xl tracking-tighter">
         I am a...
       </h2>
-
-      {/* Buttons */}
-      <div className="relative z-10 mt-16 grid grid-cols-2 gap-6 w-full max-w-3xl px-10">
+      <div className="mt-16 grid grid-cols-2 gap-4 w-full md:px-40">
         <Button
           variant="blue"
           className="h-36 text-2xl"
@@ -71,7 +47,6 @@ const Onboarding = () => {
         >
           Candidate
         </Button>
-
         <Button
           variant="destructive"
           className="h-36 text-2xl"

@@ -24,10 +24,11 @@ const schema = z.object({
     .any()
     .refine(
       (file) =>
-        file[0] &&
+        file &&
+        file.length > 0 &&
         (file[0].type === "image/png" || file[0].type === "image/jpeg"),
       {
-        message: "Only Images are allowed",
+        message: "Only PNG or JPG images are allowed",
       }
     ),
 });
@@ -37,6 +38,7 @@ const AddCompanyDrawer = ({ fetchCompanies }) => {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm({
     resolver: zodResolver(schema),
   });
@@ -49,62 +51,66 @@ const AddCompanyDrawer = ({ fetchCompanies }) => {
   } = useFetch(addNewCompany);
 
   const onSubmit = async (data) => {
-    fnAddCompany({
-      ...data,
+    await fnAddCompany({
+      name: data.name,
       logo: data.logo[0],
     });
   };
 
+  // After company is added → refresh list & close drawer
   useEffect(() => {
     if (dataAddCompany?.length > 0) {
       fetchCompanies();
+      reset();
+
+      // Close Radix drawer programmatically
+      document.querySelector("[data-state='open']")?.click();
     }
-  }, [loadingAddCompany]);
+  }, [dataAddCompany]);
 
   return (
     <Drawer>
-      <DrawerTrigger>
+      <DrawerTrigger asChild>
         <Button type="button" size="sm" variant="secondary">
           Add Company
         </Button>
       </DrawerTrigger>
-      <DrawerContent>
+
+      {/* 🔥 Z-INDEX FIX FOR CLERK */}
+      <DrawerContent className="z-[9999]">
         <DrawerHeader>
           <DrawerTitle>Add a New Company</DrawerTitle>
         </DrawerHeader>
-        <form className="flex gap-2 p-4 pb-0">
-          {/* Company Name */}
+
+        <form className="flex flex-col gap-3 p-4">
           <Input placeholder="Company name" {...register("name")} />
 
-          {/* Company Logo */}
           <Input
             type="file"
-            accept="image/*"
-            className=" file:text-gray-500"
+            accept="image/png, image/jpeg"
             {...register("logo")}
           />
 
-          {/* Add Button */}
           <Button
-            type="button"
-            onClick={handleSubmit(onSubmit)}
-            variant="destructive"
-            className="w-40"
-          >
-            Add
-          </Button>
+  variant="destructive"
+  className="w-40"
+  onClick={() => handleSubmit(onSubmit)()}
+>
+  Add
+</Button>
+
         </form>
+
         <DrawerFooter>
           {errors.name && <p className="text-red-500">{errors.name.message}</p>}
           {errors.logo && <p className="text-red-500">{errors.logo.message}</p>}
           {errorAddCompany?.message && (
-            <p className="text-red-500">{errorAddCompany?.message}</p>
+            <p className="text-red-500">{errorAddCompany.message}</p>
           )}
           {loadingAddCompany && <BarLoader width={"100%"} color="#36d7b7" />}
+
           <DrawerClose asChild>
-            <Button type="button" variant="secondary">
-              Cancel
-            </Button>
+            <Button variant="secondary">Cancel</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
